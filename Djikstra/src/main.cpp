@@ -2,27 +2,37 @@
 #include <iostream>
 #include "chemin.h"
 #include "donnee.h"
+#include "trajet.h"
 
 using namespace std;
 
 #define INF 100
 #define ALREADY_USE -1
 
-string DEPART = "A";
-string ARRIVEE = "C";
+bool uniques = true;
 
-Chemin plan[12] = {Chemin("S", "6", 6), Chemin("6", "7", 2),
-                   Chemin("7", "A", 3), Chemin("7", "8", 3),
-                   Chemin("8", "B", 3), Chemin("8", "9", 4),
-                   Chemin("8", "10", 5), Chemin("6", "10", 1),
-                   Chemin("7", "10", 2), Chemin("9", "C", 2),
-                   Chemin("10", "9", 3), Chemin("10", "D", 3)};
+vector<char> PARCOURS = {'A', 'C'};
 
-vector<vector<Donnee>> liste = {{Donnee("S", INF), Donnee("A", INF),
-                        Donnee("B", INF), Donnee("C", INF),
-                        Donnee("D", INF), Donnee("6", INF),
-                        Donnee("7", INF), Donnee("8", INF),
-                        Donnee("9", INF), Donnee("10", INF)}};
+Chemin plan[12] = {Chemin('S', '6', 5), Chemin('6', '7', 2),
+                   Chemin('7', 'A', 3), Chemin('7', '8', 3),
+                   Chemin('8', 'B', 3), Chemin('8', '9', 4),
+                   Chemin('8', '0', 4), Chemin('6', '0', 1),
+                   Chemin('7', '0', 2), Chemin('9', 'C', 2),
+                   Chemin('0', '9', 3), Chemin('0', 'D', 3)};
+
+vector<vector<Donnee>> liste = {{Donnee('S', INF), Donnee('A', INF),
+                        Donnee('B', INF), Donnee('C', INF),
+                        Donnee('D', INF), Donnee('6', INF),
+                        Donnee('7', INF), Donnee('8', INF),
+                        Donnee('9', INF), Donnee('0', INF)}};
+
+void init_liste(){
+  liste = {{Donnee('S', INF), Donnee('A', INF),
+            Donnee('B', INF), Donnee('C', INF),
+            Donnee('D', INF), Donnee('6', INF),
+            Donnee('7', INF), Donnee('8', INF),
+            Donnee('9', INF), Donnee('0', INF)}};
+}  
 
 void afficher_liste(){
   for(int k=0;k<liste.size();k++){
@@ -34,23 +44,21 @@ void afficher_liste(){
           cout << " ";
         }
       }
-      if(donnee.from != "10"){
-        cout << " ";
-      }
     }
     cout << endl;
   }
   cout << endl;
 }
 
-void afficher_trajet(vector<string> trajet){
-  for(string point : trajet){
+void afficher_trajet(Trajet trajet){
+  for(char point : trajet.parcours){
     cout << "-> " << point;
   }
   cout << endl;
+  cout << "Distance : " << trajet.distance << endl;
 }
 
-int chercher_distance(string point_A, string point_B){
+int chercher_distance(char point_A, char point_B){
   int distance = INF;
 
   for(Chemin chemin : plan){
@@ -62,7 +70,7 @@ int chercher_distance(string point_A, string point_B){
 }
 
 Donnee new_position(){
-  Donnee minimum = Donnee("", INF);
+  Donnee minimum = Donnee(' ', INF);
   int derniere_ligne = liste.size()-1;
 
   for(int k=0;k<liste[derniere_ligne].size();k++){
@@ -92,7 +100,8 @@ bool has_a_distance(int k){
   return false;
 }
 
-Donnee calculer_chemin(string depart, string arrivee){
+Donnee calculer_chemin(char depart, char arrivee){
+  init_liste();
   Donnee position = Donnee(depart, 0);
   vector<Donnee> new_ligne = {};
   int derniere_ligne = liste.size()-1;
@@ -100,8 +109,8 @@ Donnee calculer_chemin(string depart, string arrivee){
 
   while(position.from != arrivee){
     for(int k=0;k<liste[derniere_ligne].size();k++){
-      if(liste[0][k].from == position.from || liste[derniere_ligne][k].from == "~"){
-        new_ligne.insert(new_ligne.end(), Donnee("~", ALREADY_USE));
+      if(liste[0][k].from == position.from || liste[derniere_ligne][k].from == '~'){
+        new_ligne.insert(new_ligne.end(), Donnee('~', ALREADY_USE));
       }else{
         new_distance = chercher_distance(position.from, liste[0][k].from);
         if(new_distance != INF){
@@ -115,7 +124,7 @@ Donnee calculer_chemin(string depart, string arrivee){
           if(has_a_distance(k)){
             new_ligne.insert(new_ligne.end(), liste[derniere_ligne][k]);
           }else{
-            new_ligne.insert(new_ligne.end(), Donnee("I", INF));
+            new_ligne.insert(new_ligne.end(), Donnee('I', INF));
           }
         }
       }
@@ -129,46 +138,98 @@ Donnee calculer_chemin(string depart, string arrivee){
   return position;
 }
 
-vector<string> retrouver_chemin(Donnee position, string depart){
-  vector<string> trajet = {};
+vector<char> retrouver_chemin(char position, char depart){
+  vector<char> parcours = {};
   int n;
   int k = 0;
-  trajet.insert(trajet.begin(), position.from);
+  parcours.insert(parcours.begin(), position);
 
-  while(position.from != depart){
+  while(position != depart){
     for(int m=0;m<liste[0].size();m++){
-      if(liste[0][m].from == position.from){
+      if(liste[0][m].from == position){
         k = m;
       }
     }
     n = liste.size()-1;
-    while(liste[n][k].from == "~"){
+    while(liste[n][k].from == '~'){
       n--;
     }
-    position = liste[n][k];
-    trajet.insert(trajet.begin(), position.from);
+    position = liste[n][k].from;
+    parcours.insert(parcours.begin(), position);
   }
 
+  return parcours;
+}
+
+Trajet djikstra(char depart, char arrivee){  
+  Donnee position = Donnee(' ', INF);
+  vector<char> parcours = {};
+
+  position = calculer_chemin(depart, arrivee);
+  //afficher_liste();
+  parcours = retrouver_chemin(position.from, depart);
+
+  Trajet trajet = Trajet(parcours, position.distance);
   return trajet;
 }
 
-void djikstra(string depart, string arrivee){  
-  Donnee position = Donnee("", INF);
-  vector<string> trajet = {};
+Trajet compacter_trajet_complet(vector<Trajet> trajet_complet){
+  Trajet trajet_final = Trajet({}, 0);
 
-  afficher_liste();
-  position = calculer_chemin(depart, arrivee);
-  afficher_liste();
-  trajet = retrouver_chemin(position, depart);
-  afficher_trajet(trajet);
+  for(Trajet sous_trajet : trajet_complet){
+    for(int n=0;n<sous_trajet.parcours.size()-1;n++){
+      trajet_final.parcours.insert(trajet_final.parcours.end(), sous_trajet.parcours[n]);
+      trajet_final.distance += sous_trajet.distance;
+    }
+  }
+  trajet_final.parcours.insert(trajet_final.parcours.end(), 'S');
+
+  return trajet_final;
+}
+
+void trouver_trajet(vector<char> parcours){
+  char position = 'S';
+  vector<Trajet> liste_trajet = {};
+  vector<Trajet> trajet_complet = {};
+  Trajet trajet_mini = Trajet({}, INF);
+  Trajet trajet = Trajet({}, INF);
+  Trajet trajet_final = Trajet({}, INF);
+
+  while(parcours.size()){
+    for(char passage : parcours){ //On cherche un chemin pour tout les points
+      trajet = djikstra(position, passage);
+      liste_trajet.insert(liste_trajet.end(), trajet);
+    }
+    trajet_mini = Trajet({}, INF);
+    for(Trajet trajet : liste_trajet){ //On cherche le point le plus proche
+      if(trajet.distance < trajet_mini.distance){
+        trajet_mini = trajet;
+      }
+    }
+    trajet_complet.insert(trajet_complet.end(), trajet_mini);
+    liste_trajet = {};
+    parcours.erase(find(parcours.begin(), parcours.end(), trajet_mini.parcours[trajet_mini.parcours.size()-1]));
+
+    position = trajet_mini.parcours[trajet_mini.parcours.size()-1];
+  }
+
+  trajet = djikstra(position, 'S'); //On retourne au Start
+  trajet_complet.insert(trajet_complet.end(), trajet);
+
+  trajet_final = compacter_trajet_complet(trajet_complet);
+  cout << "Trajet final : ";
+  afficher_trajet(trajet_final);
 }
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  djikstra(DEPART, ARRIVEE);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+  if(uniques == true){
+    trouver_trajet(PARCOURS);
+  }
+  uniques = false;
 }
